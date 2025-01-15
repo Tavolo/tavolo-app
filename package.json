@@ -1,0 +1,19 @@
+{
+  "name": "tavolo-app",
+  "version": "2.0.0-beta",
+  "description": "Reservation and table management platform for multi-location restaurant groups",
+  "main": "src/index.ts",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "test": "jest",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "next": "^14.0.0",
+    "react": "^18.2.0",
+    "prisma": "^5.0.0",
+    "date-fns": "^3.0.0",
+    "date-fns-tz": "^2.0.0"
+  }
+}
