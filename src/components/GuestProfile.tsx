@@ -236,8 +236,15 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
   );
 }
 
+/**
+ * Calculate VIP tier based on visit count and total spend.
+ * Thresholds can be configured per-location if needed.
+ */
 function calculateVipTier(visitCount: number, totalSpend: number): 'gold' | 'silver' | 'bronze' {
+  // Gold: Frequent diners or high spenders
   if (visitCount >= 20 || totalSpend >= 5000) return 'gold';
+  // Silver: Regular customers
   if (visitCount >= 10 || totalSpend >= 2000) return 'silver';
+  // Bronze: New VIPs
   return 'bronze';
 }
