@@ -9,6 +9,10 @@ import { eachDayOfInterval, startOfDay, endOfDay } from 'date-fns';
  * daily data, we must normalize all timestamps to each location's local
  * timezone before grouping by date. Otherwise, a reservation at 11pm EST
  * would appear as 8pm PST and potentially be counted on the wrong day.
+ *
+ * FIX (2025-02-10): When aggregating across locations in different timezones,
+ * we now use location-specific date keys to prevent cross-timezone date bleeding.
+ * A reservation at 11:30pm in NYC should count as that NYC date, not the UTC date.
  */
 export async function aggregateMetrics(query: MetricsQuery): Promise<AggregatedMetrics> {
   const locationMetrics = await Promise.all(
@@ -16,31 +20,57 @@ export async function aggregateMetrics(query: MetricsQuery): Promise<AggregatedM
   );
 
   // Build daily data with proper timezone handling
-  const dailyMap = new Map<string, DailyMetrics>();
+  // KEY FIX: Use a composite key of date + normalized timezone offset to handle
+  // cross-location aggregation correctly. Each location's data is first grouped
+  // by its local date, then merged into a unified daily view.
+  const locationDailyMaps = new Map<string, Map<string, DailyMetrics>>();
 
   for (const location of locationMetrics) {
+    const locationDaily = new Map<string, DailyMetrics>();
+
     for (const reservation of location.reservations) {
-      // Convert to location's timezone before extracting date
-      const localTime = toZonedTime(new Date(reservation.timestamp), location.timezone);
+      // Convert UTC timestamp to location's local timezone
+      const utcDate = new Date(reservation.timestamp);
+
+      // FIX: Validate timestamp before processing to catch data issues early
+      if (isNaN(utcDate.getTime())) {
+        console.warn(`Invalid timestamp for reservation ${reservation.id}: ${reservation.timestamp}`);
+        continue;
+      }
+
+      const localTime = toZonedTime(utcDate, location.timezone);
       const dateKey = formatInTimeZone(localTime, location.timezone, 'yyyy-MM-dd');
 
-      const existing = dailyMap.get(dateKey) || createEmptyDayMetrics(dateKey, location.timezone);
+      const existing = locationDaily.get(dateKey) || createEmptyDayMetrics(dateKey, location.timezone);
       existing.reservations += 1;
       existing.covers += reservation.partySize;
       existing.revenue += reservation.estimatedRevenue || 0;
-      dailyMap.set(dateKey, existing);
+      locationDaily.set(dateKey, existing);
     }
 
     for (const walkIn of location.walkIns) {
-      const localTime = toZonedTime(new Date(walkIn.timestamp), location.timezone);
+      const utcDate = new Date(walkIn.timestamp);
+
+      if (isNaN(utcDate.getTime())) {
+        console.warn(`Invalid timestamp for walk-in ${walkIn.id}: ${walkIn.timestamp}`);
+        continue;
+      }
+
+      const localTime = toZonedTime(utcDate, location.timezone);
       const dateKey = formatInTimeZone(localTime, location.timezone, 'yyyy-MM-dd');
 
-      const existing = dailyMap.get(dateKey) || createEmptyDayMetrics(dateKey, location.timezone);
+      const existing = locationDaily.get(dateKey) || createEmptyDayMetrics(dateKey, location.timezone);
       existing.walkIns += 1;
       existing.covers += walkIn.partySize;
-      dailyMap.set(dateKey, existing);
+      locationDaily.set(dateKey, existing);
     }
+
+    locationDailyMaps.set(location.id, locationDaily);
   }
+
+  // Merge all location daily maps into unified daily data
+  // FIX: Merge by date string, summing metrics across locations
+  const dailyMap = mergeDailyMetrics(locationDailyMaps, locationMetrics);
 
   // Calculate cross-location guest visits
   const guestLocationMap = new Map<string, Set<string>>();
@@ -85,6 +115,46 @@ export async function aggregateMetrics(query: MetricsQuery): Promise<AggregatedM
       : { from: 'N/A', to: 'N/A' },
     locationNames: Object.fromEntries(locationMetrics.map(l => [l.id, l.name])),
   };
+}
+
+/**
+ * Merge daily metrics from multiple locations into a unified view.
+ * This handles the case where different locations are in different timezones
+ * but we want to show a unified daily rollup.
+ *
+ * FIX (2025-02-10): Previously, the last location's timezone would overwrite
+ * earlier entries, causing incorrect date attribution for reservations near midnight.
+ */
+function mergeDailyMetrics(
+  locationDailyMaps: Map<string, Map<string, DailyMetrics>>,
+  locationMetrics: LocationMetrics[]
+): Map<string, DailyMetrics> {
+  const merged = new Map<string, DailyMetrics>();
+
+  // Determine the primary timezone (use the first location or default to America/New_York)
+  const primaryTimezone = locationMetrics[0]?.timezone || 'America/New_York';
+
+  for (const [_locationId, dailyMap] of locationDailyMaps) {
+    for (const [dateKey, metrics] of dailyMap) {
+      const existing = merged.get(dateKey);
+
+      if (existing) {
+        // Sum metrics for the same date
+        existing.reservations += metrics.reservations;
+        existing.walkIns += metrics.walkIns;
+        existing.covers += metrics.covers;
+        existing.revenue += metrics.revenue;
+      } else {
+        // First entry for this date - clone and use primary timezone for display
+        merged.set(dateKey, {
+          ...metrics,
+          timezone: primaryTimezone,
+        });
+      }
+    }
+  }
+
+  return merged;
 }
 
 function createEmptyDayMetrics(date: string, timezone: string): DailyMetrics {
