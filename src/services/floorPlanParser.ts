@@ -117,17 +117,36 @@ function convertOpenTableFormat(data: any): FloorPlan {
   const tables: Table[] = [];
 
   for (const section of data.floor_plan.sections) {
+    // Skip empty sections (fixes import failure for locations with unused sections)
+    if (!section.tables || !Array.isArray(section.tables)) {
+      continue;
+    }
+
     for (const table of section.tables) {
+      // Handle missing or invalid coordinates gracefully
+      // Some OpenTable exports have null coords for inactive tables
+      const x = typeof table.x_coord === 'number' ? table.x_coord : 0;
+      const y = typeof table.y_coord === 'number' ? table.y_coord : 0;
+
+      // Skip tables with invalid IDs (deactivated tables in OpenTable)
+      if (!table.table_id && !table.table_number) {
+        continue;
+      }
+
       tables.push({
-        id: table.table_id,
-        name: table.table_number,
-        capacity: table.max_covers,
-        position: { x: table.x_coord, y: table.y_coord },
+        id: table.table_id || `table-${generateId()}`,
+        name: table.table_number || table.table_id || 'Unnamed',
+        capacity: table.max_covers || table.min_covers || 4,
+        position: { x, y },
         size: { width: table.width || 60, height: table.height || 60 },
-        shape: table.shape || 'square',
-        section: section.name,
+        shape: normalizeTableShape(table.shape),
+        section: section.name || 'main',
       });
     }
+  }
+
+  if (tables.length === 0) {
+    throw new Error('No valid tables found in floor plan. Check that the export contains active tables.');
   }
 
   return {
@@ -137,6 +156,24 @@ function convertOpenTableFormat(data: any): FloorPlan {
     dimensions: calculateDimensions(tables),
     createdAt: new Date().toISOString(),
   };
+}
+
+/**
+ * Normalize table shape values from various formats
+ */
+function normalizeTableShape(shape: any): 'round' | 'square' | 'rectangle' {
+  if (!shape) return 'square';
+
+  const normalized = String(shape).toLowerCase().trim();
+
+  if (normalized === 'round' || normalized === 'circle' || normalized === 'circular') {
+    return 'round';
+  }
+  if (normalized === 'rectangle' || normalized === 'rect' || normalized === 'rectangular') {
+    return 'rectangle';
+  }
+
+  return 'square';
 }
 
 function convertResyFormat(data: any): FloorPlan {
