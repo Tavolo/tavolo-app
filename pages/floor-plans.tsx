@@ -112,7 +112,7 @@ export default function FloorPlans() {
             {floorPlan && (
               <div className="flex flex-wrap items-center gap-4 mt-4 pt-4 border-t border-slate-200">
                 <span className="text-sm text-slate-500">Sections:</span>
-                {[...new Set(floorPlan.tables.map(t => t.section))].map(section => (
+                {Array.from(new Set(floorPlan.tables.map(t => t.section))).map(section => (
                   <div key={section} className="flex items-center gap-2">
                     <div className={`w-4 h-4 rounded border-2 ${getTableColor({ section } as Table).split(' ')[0]} ${getTableColor({ section } as Table).split(' ')[1]}`} />
                     <span className="text-sm text-slate-600">{section}</span>

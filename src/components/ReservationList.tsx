@@ -26,7 +26,7 @@ export function ReservationList({ locationId, date, timezone }: ReservationListP
       setReservations(data);
 
       // Load guest details
-      const guestIds = [...new Set(data.map(r => r.guestId))];
+      const guestIds = Array.from(new Set(data.map(r => r.guestId)));
       const guests = await Promise.all(guestIds.map(id => getGuest(id)));
       const cache: Record<string, Guest> = {};
       guests.forEach(g => cache[g.id] = g);

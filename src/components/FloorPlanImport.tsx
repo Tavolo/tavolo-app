@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { FloorPlan, Table, ImportResult } from '../types';
-import { parseFloorPlanFile } from '../services/floorPlanParser';
+import { parseFloorPlanFile, saveFloorPlan } from '../services/floorPlanParser';
 import { validateTablePositions } from '../utils/validation';
 
 interface FloorPlanImportProps {
@@ -27,7 +27,7 @@ export function FloorPlanImport({ locationId, onImportComplete, onError }: Floor
 
       setPreview(parsed);
     } catch (err) {
-      onError(`Failed to parse floor plan: ${err.message}`);
+      onError(`Failed to parse floor plan: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setImporting(false);
     }
@@ -41,7 +41,7 @@ export function FloorPlanImport({ locationId, onImportComplete, onError }: Floor
       const result = await saveFloorPlan(locationId, preview);
       onImportComplete(result);
     } catch (err) {
-      onError(`Failed to save floor plan: ${err.message}`);
+      onError(`Failed to save floor plan: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setImporting(false);
     }

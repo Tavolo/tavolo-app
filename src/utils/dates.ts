@@ -1,5 +1,5 @@
 import { format, parseISO } from 'date-fns';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone, utcToZonedTime } from 'date-fns-tz';
 
 /**
  * Format a date string for display
@@ -24,14 +24,14 @@ export function formatDateInTimezone(
  * Convert a UTC date to a specific timezone
  */
 export function toTimezone(date: Date, timezone: string): Date {
-  return toZonedTime(date, timezone);
+  return utcToZonedTime(date, timezone);
 }
 
 /**
  * Get the start of day in a specific timezone
  */
 export function startOfDayInTimezone(date: Date, timezone: string): Date {
-  const zonedDate = toZonedTime(date, timezone);
+  const zonedDate = utcToZonedTime(date, timezone);
   zonedDate.setHours(0, 0, 0, 0);
   return zonedDate;
 }
@@ -40,7 +40,7 @@ export function startOfDayInTimezone(date: Date, timezone: string): Date {
  * Get the end of day in a specific timezone
  */
 export function endOfDayInTimezone(date: Date, timezone: string): Date {
-  const zonedDate = toZonedTime(date, timezone);
+  const zonedDate = utcToZonedTime(date, timezone);
   zonedDate.setHours(23, 59, 59, 999);
   return zonedDate;
 }

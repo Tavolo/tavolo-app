@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { LocationMetrics, AggregatedMetrics, DateRange } from '../types';
 import { aggregateMetrics } from '../services/analytics';
-import { formatInTimeZone, toZonedTime } from 'date-fns-tz';
+import { formatInTimeZone } from 'date-fns-tz';
 
 interface AnalyticsDashboardProps {
   locationIds: string[];
