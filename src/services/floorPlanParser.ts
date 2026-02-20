@@ -218,3 +218,14 @@ function calculateDimensions(tables: Table[]): { width: number; height: number }
 function generateId(): string {
   return Math.random().toString(36).substring(2, 15);
 }
+
+/**
+ * Saves a floor plan to the backend.
+ * In production, this would POST to the API.
+ * For demo purposes, returns the floor plan unchanged.
+ */
+export async function saveFloorPlan(locationId: string, floorPlan: FloorPlan): Promise<FloorPlan> {
+  // Simulate API delay
+  await new Promise(resolve => setTimeout(resolve, 300));
+  return floorPlan;
+}

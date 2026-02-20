@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Guest, VisitHistory } from '../types';
-import { formatDate, formatRelativeTime } from '../utils/dates';
+import { formatDate } from '../utils/dates';
 
 interface GuestProfileProps {
   guest: Guest;
@@ -9,16 +9,6 @@ interface GuestProfileProps {
   onMergeProfiles?: (secondaryGuestId: string) => void;
 }
 
-/**
- * Redesigned Guest Profile component for v2.0
- *
- * Changes from v1:
- * - Added cross-location visit summary
- * - New preference editing inline
- * - VIP badge with tier levels
- * - Spending insights section
- * - Profile merge functionality for duplicate guests
- */
 export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: GuestProfileProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedPreferences, setEditedPreferences] = useState(guest.preferences);
@@ -28,7 +18,6 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
     ? visits.reduce((sum, v) => sum + v.partySize, 0) / visits.length
     : 0;
 
-  // Cross-location analysis
   const locationVisits = visits.reduce((acc, v) => {
     acc[v.locationName] = (acc[v.locationName] || 0) + 1;
     return acc;
@@ -38,7 +27,6 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
   const favoriteLocation = Object.entries(locationVisits)
     .sort((a, b) => b[1] - a[1])[0]?.[0];
 
-  // Calculate VIP tier
   const vipTier = calculateVipTier(visits.length, totalSpend);
 
   const handleSavePreferences = () => {
@@ -50,51 +38,62 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
   };
 
   return (
-    <div className="guest-profile guest-profile-v2">
-      <header className="guest-header">
-        <div className="guest-identity">
-          <h2>{guest.firstName} {guest.lastName}</h2>
-          <span className="guest-email">{guest.email}</span>
-          {guest.phone && <span className="guest-phone">{guest.phone}</span>}
-        </div>
-
-        <div className="guest-badges">
-          {guest.isVIP && (
-            <span className={`vip-badge tier-${vipTier}`}>
-              {vipTier === 'gold' ? '★ Gold VIP' :
-               vipTier === 'silver' ? '☆ Silver VIP' : 'VIP'}
+    <div className="card">
+      <header className="flex items-start justify-between mb-6 pb-6 border-b border-slate-200">
+        <div className="flex items-center gap-4">
+          <div className={`w-16 h-16 rounded-full flex items-center justify-center ${
+            guest.isVIP ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'
+          }`}>
+            <span className="font-bold text-xl">
+              {guest.firstName[0]}{guest.lastName[0]}
             </span>
-          )}
-          {uniqueLocations > 1 && (
-            <span className="multi-location-badge">
-              {uniqueLocations} locations
-            </span>
-          )}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-xl font-semibold text-slate-900">
+                {guest.firstName} {guest.lastName}
+              </h2>
+              {guest.isVIP && (
+                <span className={`vip-badge tier-${vipTier}`}>
+                  {vipTier === 'gold' ? 'Gold VIP' :
+                   vipTier === 'silver' ? 'Silver VIP' : 'VIP'}
+                </span>
+              )}
+              {uniqueLocations > 1 && (
+                <span className="px-2 py-0.5 bg-tavolo-100 text-tavolo-700 rounded text-xs font-medium">
+                  {uniqueLocations} locations
+                </span>
+              )}
+            </div>
+            <p className="text-slate-500">{guest.email}</p>
+            {guest.phone && <p className="text-slate-500">{guest.phone}</p>}
+          </div>
         </div>
       </header>
 
-      <div className="profile-grid">
-        <section className="preferences">
-          <div className="section-header">
-            <h3>Preferences</h3>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-900">Preferences</h3>
             <button
               onClick={() => isEditing ? handleSavePreferences() : setIsEditing(true)}
-              className="edit-btn"
+              className="text-sm text-tavolo-600 hover:text-tavolo-700 font-medium"
             >
               {isEditing ? 'Save' : 'Edit'}
             </button>
           </div>
 
           {isEditing ? (
-            <div className="preferences-form">
-              <label>
-                Seating preference
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Seating preference</label>
                 <select
                   value={editedPreferences.seating || ''}
                   onChange={(e) => setEditedPreferences({
                     ...editedPreferences,
                     seating: e.target.value as any
                   })}
+                  className="select"
                 >
                   <option value="">No preference</option>
                   <option value="booth">Booth</option>
@@ -104,10 +103,10 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
                   <option value="corner">Corner</option>
                   <option value="private">Private</option>
                 </select>
-              </label>
+              </div>
 
-              <label>
-                Allergies
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Allergies</label>
                 <input
                   type="text"
                   value={editedPreferences.allergies?.join(', ') || ''}
@@ -116,11 +115,12 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
                     allergies: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
                   })}
                   placeholder="e.g., shellfish, peanuts"
+                  className="input"
                 />
-              </label>
+              </div>
 
-              <label>
-                Notes
+              <div>
+                <label className="block text-sm text-slate-600 mb-1">Notes</label>
                 <textarea
                   value={editedPreferences.notes || ''}
                   onChange={(e) => setEditedPreferences({
@@ -128,91 +128,91 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
                     notes: e.target.value
                   })}
                   placeholder="Any special notes about this guest"
+                  className="input min-h-20"
                 />
-              </label>
+              </div>
             </div>
           ) : (
-            <ul className="preferences-list">
+            <ul className="space-y-2">
               {guest.preferences.seating && (
-                <li>
-                  <span className="pref-icon">🪑</span>
-                  Prefers {guest.preferences.seating} seating
+                <li className="flex items-center gap-2 text-sm">
+                  <span className="text-slate-400">Seating:</span>
+                  <span className="text-slate-700 capitalize">{guest.preferences.seating}</span>
                 </li>
               )}
-              {guest.preferences.allergies?.length > 0 && (
-                <li className="allergy-warning">
-                  <span className="pref-icon">⚠️</span>
-                  Allergies: {guest.preferences.allergies.join(', ')}
+              {(guest.preferences.allergies?.length ?? 0) > 0 && (
+                <li className="flex items-start gap-2 text-sm">
+                  <span className="text-red-500">Allergies:</span>
+                  <span className="text-red-700">{guest.preferences.allergies?.join(', ')}</span>
                 </li>
               )}
-              {guest.preferences.dietaryRestrictions?.length > 0 && (
-                <li>
-                  <span className="pref-icon">🍽️</span>
-                  {guest.preferences.dietaryRestrictions.join(', ')}
+              {(guest.preferences.dietaryRestrictions?.length ?? 0) > 0 && (
+                <li className="flex items-center gap-2 text-sm">
+                  <span className="text-slate-400">Dietary:</span>
+                  <span className="text-slate-700">{guest.preferences.dietaryRestrictions?.join(', ')}</span>
                 </li>
               )}
               {guest.preferences.notes && (
-                <li>
-                  <span className="pref-icon">📝</span>
-                  {guest.preferences.notes}
+                <li className="text-sm mt-2 p-2 bg-slate-50 rounded">
+                  <span className="text-slate-600">{guest.preferences.notes}</span>
                 </li>
               )}
               {!guest.preferences.seating &&
                !guest.preferences.allergies?.length &&
                !guest.preferences.notes && (
-                <li className="no-prefs">No preferences recorded</li>
+                <li className="text-sm text-slate-400">No preferences recorded</li>
               )}
             </ul>
           )}
         </section>
 
-        <section className="guest-stats">
-          <h3>Guest Insights</h3>
-          <div className="stats-grid">
-            <div className="stat">
-              <span className="value">{visits.length}</span>
-              <span className="label">Total visits</span>
+        <section>
+          <h3 className="font-semibold text-slate-900 mb-3">Guest Insights</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="p-3 bg-slate-50 rounded-lg text-center">
+              <span className="block text-xl font-bold text-slate-900">{visits.length}</span>
+              <span className="text-xs text-slate-500">Total visits</span>
             </div>
-            <div className="stat">
-              <span className="value">${totalSpend.toLocaleString()}</span>
-              <span className="label">Lifetime spend</span>
+            <div className="p-3 bg-slate-50 rounded-lg text-center">
+              <span className="block text-xl font-bold text-slate-900">${totalSpend.toLocaleString()}</span>
+              <span className="text-xs text-slate-500">Lifetime spend</span>
             </div>
-            <div className="stat">
-              <span className="value">{avgPartySize.toFixed(1)}</span>
-              <span className="label">Avg party size</span>
+            <div className="p-3 bg-slate-50 rounded-lg text-center">
+              <span className="block text-xl font-bold text-slate-900">{avgPartySize.toFixed(1)}</span>
+              <span className="text-xs text-slate-500">Avg party size</span>
             </div>
-            <div className="stat">
-              <span className="value">{uniqueLocations}</span>
-              <span className="label">Locations visited</span>
+            <div className="p-3 bg-slate-50 rounded-lg text-center">
+              <span className="block text-xl font-bold text-slate-900">{uniqueLocations}</span>
+              <span className="text-xs text-slate-500">Locations</span>
             </div>
           </div>
 
           {favoriteLocation && (
-            <p className="favorite-location">
+            <p className="mt-3 text-sm text-tavolo-600 bg-tavolo-50 p-2 rounded">
               Most visited: <strong>{favoriteLocation}</strong>
             </p>
           )}
         </section>
 
-        <section className="visit-history">
-          <h3>Recent Visits</h3>
-          <div className="visits-list">
+        <section>
+          <h3 className="font-semibold text-slate-900 mb-3">Recent Visits</h3>
+          <div className="space-y-2">
             {visits.slice(0, 5).map(visit => (
-              <div key={visit.id} className="visit-item">
-                <div className="visit-main">
-                  <span className="location">{visit.locationName}</span>
-                  <span className="date">{formatDate(visit.date)}</span>
+              <div key={visit.id} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                <div>
+                  <p className="text-sm font-medium text-slate-700">{visit.locationName}</p>
+                  <p className="text-xs text-slate-400">{formatDate(visit.date)}</p>
                 </div>
-                <div className="visit-details">
-                  <span className="party">Party of {visit.partySize}</span>
-                  <span className="amount">${visit.amount}</span>
+                <div className="text-right">
+                  <p className="text-sm font-medium text-slate-900">${visit.amount}</p>
+                  <p className="text-xs text-slate-400">Party of {visit.partySize}</p>
                 </div>
               </div>
             ))}
           </div>
 
           {visits.length > 5 && (
-            <button className="view-all">
+            <button className="mt-3 text-sm text-tavolo-600 hover:text-tavolo-700 font-medium">
               View all {visits.length} visits
             </button>
           )}
@@ -220,13 +220,13 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
       </div>
 
       {onMergeProfiles && (
-        <div className="profile-actions">
+        <div className="mt-6 pt-6 border-t border-slate-200">
           <button
             onClick={() => {
               const secondaryId = prompt('Enter guest ID to merge into this profile:');
               if (secondaryId) onMergeProfiles(secondaryId);
             }}
-            className="merge-btn"
+            className="btn-secondary"
           >
             Merge duplicate profile
           </button>
@@ -236,15 +236,8 @@ export function GuestProfile({ guest, visits, onUpdate, onMergeProfiles }: Guest
   );
 }
 
-/**
- * Calculate VIP tier based on visit count and total spend.
- * Thresholds can be configured per-location if needed.
- */
 function calculateVipTier(visitCount: number, totalSpend: number): 'gold' | 'silver' | 'bronze' {
-  // Gold: Frequent diners or high spenders
   if (visitCount >= 20 || totalSpend >= 5000) return 'gold';
-  // Silver: Regular customers
   if (visitCount >= 10 || totalSpend >= 2000) return 'silver';
-  // Bronze: New VIPs
   return 'bronze';
 }
