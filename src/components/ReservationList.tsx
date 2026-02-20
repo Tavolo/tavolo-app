@@ -102,12 +102,18 @@ export function ReservationList({ locationId, date, timezone }: ReservationListP
                   <td>{res.notes || '-'}</td>
                   <td>
                     {res.status === 'confirmed' && (
-                      <button onClick={() => handleStatusChange(res.id, 'seated')}>
+                      <button
+                        onClick={() => handleStatusChange(res.id, 'seated')}
+                        aria-label={`Seat ${guest?.firstName || 'guest'}'s party`}
+                      >
                         Seat
                       </button>
                     )}
                     {res.status === 'seated' && (
-                      <button onClick={() => handleStatusChange(res.id, 'completed')}>
+                      <button
+                        onClick={() => handleStatusChange(res.id, 'completed')}
+                        aria-label={`Mark ${guest?.firstName || 'guest'}'s reservation as complete`}
+                      >
                         Complete
                       </button>
                     )}
