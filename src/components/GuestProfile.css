@@ -267,3 +267,56 @@
 .merge-btn:hover {
   background: #fff3e0;
 }
+
+/* Mobile responsive styles */
+@media (max-width: 768px) {
+  .guest-profile-v2 {
+    padding: 16px;
+  }
+
+  .guest-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .profile-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stat .value {
+    font-size: 20px;
+  }
+
+  .visit-item {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .visit-details {
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .guest-badges {
+    flex-wrap: wrap;
+  }
+
+  .vip-badge,
+  .multi-location-badge {
+    font-size: 11px;
+    padding: 3px 10px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .guest-identity h2 {
+    font-size: 20px;
+  }
+}
