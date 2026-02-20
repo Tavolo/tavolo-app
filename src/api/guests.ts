@@ -4,15 +4,31 @@ import { guests, visitHistory } from '../data/mockData';
 // In-memory state for demo
 let localGuests = [...guests];
 
-export async function searchGuests(query: string): Promise<Guest[]> {
+// Search result limit for performance
+const MAX_SEARCH_RESULTS = 50;
+
+export async function searchGuests(query: string, limit: number = MAX_SEARCH_RESULTS): Promise<Guest[]> {
   // Simulate API delay
   await new Promise(resolve => setTimeout(resolve, 200));
 
+  // Early return for empty queries
+  if (!query || query.length < 2) {
+    return localGuests.slice(0, limit);
+  }
+
   const lowerQuery = query.toLowerCase();
-  return localGuests.filter(g =>
-    `${g.firstName} ${g.lastName}`.toLowerCase().includes(lowerQuery) ||
-    g.email.toLowerCase().includes(lowerQuery)
-  );
+  const results: Guest[] = [];
+
+  // Use early termination for better performance on large datasets
+  for (const g of localGuests) {
+    const fullName = `${g.firstName} ${g.lastName}`.toLowerCase();
+    if (fullName.includes(lowerQuery) || g.email.toLowerCase().includes(lowerQuery)) {
+      results.push(g);
+      if (results.length >= limit) break;
+    }
+  }
+
+  return results;
 }
 
 export async function getGuest(guestId: string): Promise<Guest> {
